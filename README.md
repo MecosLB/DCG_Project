@@ -78,7 +78,7 @@ python digi_scrap.py
 
 ![Console Output Screenshot](assets/console.jpg)
 
-![Output File Screenshot](assets/digifile.jpg)
+![Output File Screenshot](assets/difigile.jpg)
 
 ---
 
