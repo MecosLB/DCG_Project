@@ -80,10 +80,13 @@ class DigiScraper:
         """
         try:
             info_head = self.__html.find_all("ul", class_="cardinfo_head")
+            info_name = self.__html.find_all("div", class_="card_name")
 
             for i in range(len(info_head)):
                 info = info_head[i].find_all("li")
+
                 card = {
+                    "name": info_name[i],
                     "number": info[0],
                     "rarity": info[1],
                     "type": info[2],
@@ -94,7 +97,6 @@ class DigiScraper:
                     ),  # Validate as some cardtypes such as tamers and options do not have level attr.
                 }
 
-                # print(info[3] if len(info) > 3 else "-")
                 self.__cards.insert(i, card)
         except:
             logging.error(traceback.format_exc())
@@ -238,6 +240,7 @@ class DigiScraper:
         try:
             with open("./data/digifile.csv", "w", newline="", encoding="utf-8") as file:
                 fieldnames = [
+                    "name",
                     "number",
                     "rarity",
                     "type",
