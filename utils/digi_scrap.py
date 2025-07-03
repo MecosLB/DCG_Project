@@ -36,7 +36,7 @@ __author__ = "Sebastian Rangel D Rugama"
 __copyright__ = "©Akiyoshi Hongo, Toei Animation"
 __credits__ = ["©Akiyoshi Hongo, Toei Animation"]
 __license__ = "GPL"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __maintainer__ = "Sebastian Rangel D Rugama"
 __email__ = "sebokiabot@gmail.com"
 __status__ = "Development"
@@ -88,10 +88,13 @@ class DigiScraper:
                     "rarity": info[1],
                     "type": info[2],
                     "level": (
-                        info[3] if len(info) > 3 else ""
+                        info[3]
+                        if len(info) > 3 and str(info[3]).find("Alternative Art") < 0
+                        else "<li>-</li>"
                     ),  # Validate as some cardtypes such as tamers and options do not have level attr.
                 }
 
+                # print(info[3] if len(info) > 3 else "-")
                 self.__cards.insert(i, card)
         except:
             logging.error(traceback.format_exc())
@@ -221,6 +224,7 @@ class DigiScraper:
 
                 # If it is a missing value (-) then set it as null
                 card[attr] = "null" if string_value == "-" else string_value
+
         except:
             logging.error(traceback.format_exc())
 
