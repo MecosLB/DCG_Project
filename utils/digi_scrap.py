@@ -31,6 +31,8 @@ from dotenv import load_dotenv, dotenv_values
 import requests
 from bs4 import BeautifulSoup
 import csv
+import sys
+import argparse
 
 __author__ = "Sebastian Rangel D Rugama"
 __copyright__ = "©Akiyoshi Hongo, Toei Animation"
@@ -240,8 +242,8 @@ class DigiScraper:
         try:
             with open("./data/digifile.csv", "w", newline="", encoding="utf-8") as file:
                 fieldnames = [
-                    "name",
                     "number",
+                    "name",
                     "rarity",
                     "type",
                     "level",
@@ -267,7 +269,7 @@ class DigiScraper:
         except:
             logging.error(traceback.format_exc())
 
-    def search_cardset(self, cardset_num: int):
+    def search_cardset(self, cardset_num: str):
         """
         Replaces in the url the desired cardset number and send the request.
 
@@ -277,11 +279,24 @@ class DigiScraper:
         Returns:
             None.
         """
-        self.__url = self.__url.replace("{category}", str(cardset_num))
+        self.__url = self.__url.replace("{category}", cardset_num)
         self.send_request()
 
 
 # Main method
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog="Scrapermon",
+        description="Scrapes information for a specific Digimon Card Game set (e.g., BT14) based on the category ID (eg., 522001) from the official Digimon Card Game website, and stores the raw data in a CSV file.",
+    )
+    parser.add_argument("-cs", "--cardset", help="ID of the cardset to scrape")
+
+    args = parser.parse_args()
+
+    # Validate if cardset ID was given
+    if not args.cardset:
+        print("No cardset ID was given....")
+        sys.exit(1)
+
     scrapermon = DigiScraper()
-    scrapermon.search_cardset(522001)  # Gotten from the official website.
+    scrapermon.search_cardset(args.cardset)
