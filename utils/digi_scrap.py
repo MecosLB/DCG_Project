@@ -65,6 +65,7 @@ class DigiScraper:
 
             self.__url = env_variables["WEB_URL"]
             self.__html = ""
+            self.__set_name = ""
             self.__cards = []
         except:
             print("WEB_URL env variable does not exist...")
@@ -181,6 +182,10 @@ class DigiScraper:
             response.raise_for_status()
 
             self.__html = BeautifulSoup(response.text, "html.parser")
+            self.__set_name = self.__html.find("div", id="maintitle").getText()
+
+            print(f"Set '{self.__set_name}' found!")
+            print(f"Scraping cards...")
 
             # Get cards info
             self.get_card_head()
@@ -240,7 +245,13 @@ class DigiScraper:
             None
         """
         try:
-            with open("./data/digifile.csv", "w", newline="", encoding="utf-8") as file:
+            # Format file name
+            file_name = self.__set_name.replace(" ", "_")
+            file_name = file_name.replace(".", "-")
+
+            with open(
+                f"./data/{file_name}.csv", "w", newline="", encoding="utf-8"
+            ) as file:
                 fieldnames = [
                     "number",
                     "name",
@@ -264,7 +275,7 @@ class DigiScraper:
                 writer.writeheader()
                 writer.writerows(self.__cards)
                 print(
-                    f"Cards found: {len(self.__cards)}\nThe digifile has been saved :^)"
+                    f"Cards found: {len(self.__cards)}\nThe digifile: {file_name}.csv has been saved :^)"
                 )
         except:
             logging.error(traceback.format_exc())
