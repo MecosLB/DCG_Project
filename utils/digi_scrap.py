@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Scrapes a specific card set from the official Digimon Card Game website.
+"""Scrapes a specific cardset from the official Digimon Card Game website.
 
-Each card included in card set holds a pre defined number of properties depending its type,
+Each card included in cardset holds a pre defined number of properties depending its type,
 here is an overall list of all the possible properties that a card could have:
     -Number.
     -Name.
@@ -81,6 +81,25 @@ class DigiScraper:
             self.__cards = []
         except:
             self.__logger.error("WEB_URL env variable does not exist...")
+
+    def validate_not_found(self):
+        r"""
+        Validates if element \<li>No search results were found.\</li> exists in the html scraped.
+
+        Returns:
+            response (boolean): Whether the cardset was found or not
+        """
+        try:
+            no_results = self.__html.find("ul", class_="image_lists")
+            no_results = no_results.find_all("li")
+
+            if str(no_results[0]).find("No search results") >= 0:
+                self.__logger.error(f"No cardset was found in URL: {self.__url}")
+                return True
+        except:
+            self.__logger.error(traceback.format_exc())
+
+        return False
 
     def get_card_head(self):
         """
@@ -194,6 +213,10 @@ class DigiScraper:
             response.raise_for_status()
 
             self.__html = BeautifulSoup(response.text, "html.parser")
+
+            if self.validate_not_found():
+                return 1
+
             self.__set_name = self.__html.find("div", id="maintitle").getText()
 
             self.__logger.info(f"Set '{self.__set_name}' found!")
