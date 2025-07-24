@@ -4,6 +4,7 @@
 Each card included in card set holds a pre defined number of properties depending its type,
 here is an overall list of all the possible properties that a card could have:
     -Number.
+    -Name.
     -Rarity.
     -Type.
     -Level.
@@ -26,11 +27,13 @@ with no commercial or financial intent.
 """
 
 import logging
+import datetime
 import traceback
 from dotenv import load_dotenv, dotenv_values
 import requests
 from bs4 import BeautifulSoup
 import csv
+import os
 import sys
 import argparse
 
@@ -58,17 +61,26 @@ class DigiScraper:
         """
         Initializes a DigiScraper object by loading the .env file and getting the WEB_URL variable to set it up as our url to scrape on.
         """
+        log_name = datetime.datetime.now()
+        log_name = log_name.strftime("%m%d%Y_%H-%M-%S")
+        logging.basicConfig(
+            filename=f"{os.path.dirname(os.path.abspath(sys.argv[0]))}/../logs/{log_name}.log",
+            encoding="utf-8",
+            level=logging.DEBUG,
+        )
+
         try:
             # Load .env file
             load_dotenv()
             env_variables = dotenv_values("./.env")
 
+            self.__logger = logging.getLogger(__name__)
             self.__url = env_variables["WEB_URL"]
             self.__html = ""
             self.__set_name = ""
             self.__cards = []
         except:
-            print("WEB_URL env variable does not exist...")
+            self.__logger.error("WEB_URL env variable does not exist...")
 
     def get_card_head(self):
         """
@@ -102,7 +114,7 @@ class DigiScraper:
 
                 self.__cards.insert(i, card)
         except:
-            logging.error(traceback.format_exc())
+            self.__logger.error(traceback.format_exc())
 
     def get_card_top(self):
         """
@@ -142,7 +154,7 @@ class DigiScraper:
 
                 self.__cards[i] = card
         except:
-            logging.error(traceback.format_exc())
+            self.__logger.error(traceback.format_exc())
 
     def get_card_bottom(self):
         """
@@ -168,7 +180,7 @@ class DigiScraper:
 
                 self.__cards[i] = card
         except:
-            logging.error(traceback.format_exc())
+            self.__logger.error(traceback.format_exc())
 
     def send_request(self):
         """
@@ -184,8 +196,8 @@ class DigiScraper:
             self.__html = BeautifulSoup(response.text, "html.parser")
             self.__set_name = self.__html.find("div", id="maintitle").getText()
 
-            print(f"Set '{self.__set_name}' found!")
-            print(f"Scraping cards...")
+            self.__logger.info(f"Set '{self.__set_name}' found!")
+            self.__logger.info("Scraping cards...")
 
             # Get cards info
             self.get_card_head()
@@ -195,17 +207,20 @@ class DigiScraper:
             # Remove html tags
             for i in range(len(self.__cards)):
                 self.remove_tags(self.__cards[i])
+                self.__logger.info(
+                    f"Card {self.__cards[i]["number"]} {self.__cards[i]["name"]} scraped and cleaned"
+                )
 
             # Save as .csv file
             self.save_to_file()
         except requests.exceptions.HTTPError as http_error:
-            print(f"HTTP error: {http_error}....")
+            self.__logger.error(f"HTTP error: {http_error}....")
         except requests.exceptions.ConnectionError:
-            print("Connection error...")
+            self.__logger.error("Connection error...")
         except requests.exceptions.Timeout:
-            print("Request timed out...")
+            self.__logger.error("Request timed out...")
         except requests.exceptions.RequestException as error:
-            print(f"Error: {error}....")
+            self.__logger.error(f"Error: {error}....")
 
     def remove_tags(self, card: dict):
         """
@@ -235,7 +250,7 @@ class DigiScraper:
                 card[attr] = "null" if string_value == "-" else string_value
 
         except:
-            logging.error(traceback.format_exc())
+            self.__logger.error(traceback.format_exc())
 
     def save_to_file(self):
         """
@@ -274,11 +289,12 @@ class DigiScraper:
 
                 writer.writeheader()
                 writer.writerows(self.__cards)
-                print(
-                    f"Cards found: {len(self.__cards)}\nThe digifile: {file_name}.csv has been saved :^)"
+                self.__logger.info(f"Cards found: {len(self.__cards)}")
+                self.__logger.info(
+                    f"The digifile: '{file_name}.csv' has been saved :^)"
                 )
         except:
-            logging.error(traceback.format_exc())
+            self.__logger.error(traceback.format_exc())
 
     def search_cardset(self, cardset_num: str):
         """
@@ -291,14 +307,17 @@ class DigiScraper:
             None.
         """
         self.__url = self.__url.replace("{category}", cardset_num)
+
+        self.__logger.info("EXECUTION STARTED")
         self.send_request()
+        self.__logger.info("EXECUTION FINISHED")
 
 
 # Main method
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="Scrapermon",
-        description="Scrapes information for a specific Digimon Card Game set (e.g., BT14) based on the category ID (eg., 522001) from the official Digimon Card Game website, and stores the raw data in a CSV file.",
+        description="Scrapes information for a specific Digimon Card Game set (e.g. BT14) based on the category ID (eg. 522001) from the official Digimon Card Game website, and stores the raw data in a CSV file.",
     )
     parser.add_argument("-cs", "--cardset", help="ID of the cardset to scrape")
 
@@ -306,7 +325,8 @@ if __name__ == "__main__":
 
     # Validate if cardset ID was given
     if not args.cardset:
-        print("No cardset ID was given....")
+        print("No cardset ID was given....\n")
+        parser.print_help()
         sys.exit(1)
 
     scrapermon = DigiScraper()
